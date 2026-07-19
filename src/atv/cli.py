@@ -40,10 +40,20 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     if args.repo and args.base:
-        diff_text = subprocess.run(
-            ["git", "-C", args.repo, "diff", f"{args.base}...HEAD"],
-            capture_output=True, text=True, check=False).stdout
-        files = parse_diff(diff_text)
+        try:
+            proc = subprocess.run(
+                ["git", "-C", args.repo, "diff", f"{args.base}...HEAD"],
+                capture_output=True, text=True, check=False)
+        except FileNotFoundError:
+            print("error: git not found on PATH", file=sys.stderr)
+            return 2
+        if proc.returncode != 0:
+            # A git failure (bad repo/ref, git missing) must fail loudly — never
+            # produce an empty diff that reports a false "clean" and exits 0.
+            print(f"error: git diff failed (exit {proc.returncode}): "
+                  f"{proc.stderr.strip()}", file=sys.stderr)
+            return 2
+        files = parse_diff(proc.stdout)
         ctx = AnalysisContext(files, working_tree_resolver(args.repo))
     elif args.diff:
         diff_text = sys.stdin.read() if args.diff == "-" else open(

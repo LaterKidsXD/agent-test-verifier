@@ -27,3 +27,9 @@ def test_missing_args_is_usage_error():
         assert e.code == 2
     else:
         raise AssertionError("expected SystemExit(2)")
+
+def test_repo_mode_git_failure_returns_2(tmp_path, capsys):
+    # tmp_path is not a git repo -> git diff fails -> exit 2 (NOT a false clean/0)
+    rc = main(["--repo", str(tmp_path), "--base", "HEAD"])
+    assert rc == 2
+    assert "git" in capsys.readouterr().err.lower()
