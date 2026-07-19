@@ -334,7 +334,7 @@ git commit -m "feat: unified-diff parser + file classification"
 **Interfaces:**
 - Consumes: `atv.diff.FileDiff`.
 - Produces:
-  - `@dataclass class AnalysisContext(files: list[FileDiff], resolver: Callable[[str], str|None], warnings: list[str])` with methods `new_source(path)->str|None` and `tree(path)->ast.Module|None` (lazy, cached; records a warning + returns None on missing/unparseable).
+  - `@dataclass class AnalysisContext(files: list[FileDiff], resolver: Callable[[str], str|None], warnings: list[str])` with methods `new_source(path)->str|None` and `tree(path)->ast.Module|None` (lazy, cached; records a warning + returns None on **unparseable**. A **missing** source returns None **silently** — None is the normal diff-mode result for every modified file, so warning on it would flood the warnings channel; genuine read failures are handled in `working_tree_resolver`, which must not raise).
   - `working_tree_resolver(repo_root: str) -> Callable[[str], str|None]` (reads file from disk).
   - `diff_reconstruct_resolver(files: list[FileDiff]) -> Callable[[str], str|None]` (returns joined added-lines content **only for fully-added files**, else None).
 
