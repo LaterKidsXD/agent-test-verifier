@@ -1,4 +1,4 @@
-from atv.context import AnalysisContext, diff_reconstruct_resolver
+from atv.context import AnalysisContext, diff_reconstruct_resolver, working_tree_resolver
 from atv.diff import FileDiff
 
 def test_tree_parses_added_file_via_reconstruct():
@@ -21,3 +21,17 @@ def test_unparseable_records_warning_not_crash():
     ctx = AnalysisContext([fd], diff_reconstruct_resolver([fd]))
     assert ctx.tree("conftest.py") is None
     assert any("conftest.py" in w for w in ctx.warnings)
+
+def test_working_tree_resolver_reads_utf8_file(tmp_path):
+    (tmp_path / "mod.py").write_text("def x():\n    pass\n", encoding="utf-8")
+    resolve = working_tree_resolver(str(tmp_path))
+    assert resolve("mod.py") == "def x():\n    pass\n"
+
+def test_working_tree_resolver_missing_file_returns_none(tmp_path):
+    resolve = working_tree_resolver(str(tmp_path))
+    assert resolve("does_not_exist.py") is None
+
+def test_working_tree_resolver_non_utf8_file_returns_none(tmp_path):
+    (tmp_path / "bad.py").write_bytes(b"\xff\xfe\x00bad")
+    resolve = working_tree_resolver(str(tmp_path))
+    assert resolve("bad.py") is None

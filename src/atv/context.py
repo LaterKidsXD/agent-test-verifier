@@ -42,7 +42,7 @@ def working_tree_resolver(repo_root: str) -> Resolver:
         try:
             with open(os.path.join(repo_root, path), encoding="utf-8") as fh:
                 return fh.read()
-        except OSError:
+        except (OSError, UnicodeDecodeError):
             return None
     return resolve
 
