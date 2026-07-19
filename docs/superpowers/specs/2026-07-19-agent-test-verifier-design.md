@@ -112,7 +112,7 @@ Exit code: `0` = no findings (clean), `1` = findings at/above `--fail-on` (for C
 
 ## Tech stack
 
-Python (3.11+), stdlib `ast` (+ `libcst` only if needed for robust source-range mapping), `unidiff` or a small hand-rolled parser for unified diffs. Zero heavy/runtime deps. `pytest` + `ruff` gate. MIT license.
+Python (3.11+), stdlib `ast` (+ `libcst` only if needed for robust source-range mapping), `unidiff` for unified diffs. Zero heavy/runtime deps beyond `unidiff`. `pytest` + `ruff` gate. MIT license.
 
 ## OSS / distribution
 
@@ -125,7 +125,7 @@ Public GitHub repo under the builder handle; README leads with the live `conftes
 3. Shipped public with the demo README.
 4. (Signal, not gate) adoption shows up as stars / installs / CI usage.
 
-## Open questions (for spec review)
+## Decisions (resolved at spec review, 2026-07-19)
 
-- **Public name / package name.** Working dir is `agent-test-verifier`. Candidates: `greenwash`, `fakegreen`, `testgate`, `greengate`. Your call — it's the public brand.
-- **Diff-parsing dependency:** `unidiff` (small, battle-tested) vs. a hand-rolled parser (zero deps). Leaning `unidiff`; flag if you want zero deps.
+- **Public name / package name:** keep `agent-test-verifier` for now (provisional; may rebrand before public launch).
+- **Diff-parsing dependency:** `unidiff` (small, battle-tested) — chosen over a hand-rolled parser to avoid parser edge-case risk.
