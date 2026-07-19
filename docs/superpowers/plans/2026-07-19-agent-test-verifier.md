@@ -599,11 +599,14 @@ def detect(ctx: AnalysisContext) -> list[Finding]:
     for fd in ctx.files:
         if fd.kind != "test":
             continue
-        for text in fd.removed_lines:
-            if _ASSERT.match(text):
-                findings.append(Finding(
-                    fd.path, 0, "assertion_removed", Severity.HIGH,
-                    "an assertion was deleted from an existing test", text.strip()))
+        removed_asserts = [t for t in fd.removed_lines if _ASSERT.match(t)]
+        added_asserts = [t for _, t in fd.added_lines if _ASSERT.match(t)]
+        # Only a NET decrease is a real deletion — a 1-for-1 edit (assert x==3 ->
+        # assert x==4) or a reformat is removed+added and must stay silent.
+        for text in removed_asserts[len(added_asserts):]:
+            findings.append(Finding(
+                fd.path, 0, "assertion_removed", Severity.HIGH,
+                "an assertion was net-deleted from an existing test", text.strip()))
         for ln, text in fd.added_lines:
             if _TRIVIAL.match(text):
                 findings.append(Finding(
