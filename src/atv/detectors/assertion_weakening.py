@@ -25,7 +25,8 @@ def detect(ctx: AnalysisContext) -> list[Finding]:
                 fd.path, 0, "assertion_removed", Severity.HIGH,
                 "an assertion was net-deleted from an existing test", text.strip()))
         for ln, text in fd.added_lines:
-            if _TRIVIAL.match(text) or _TAUTOLOGY.match(text):
+            taut = _TAUTOLOGY.match(text)
+            if _TRIVIAL.match(text) or (taut and "(" not in taut.group("lhs")):
                 findings.append(Finding(
                     fd.path, ln, "assertion_trivialized", Severity.HIGH,
                     "assertion is always true - cannot fail", text.strip()))

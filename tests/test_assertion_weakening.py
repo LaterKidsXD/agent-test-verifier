@@ -41,3 +41,6 @@ def test_net_deletion_still_flags():
 def test_flags_tautology():
     f = detect(_ctx(added=[(5, "    assert x == x")]))
     assert len(f) == 1 and f[0].pattern == "assertion_trivialized"
+
+def test_call_tautology_not_flagged():
+    assert detect(_ctx(added=[(5, "    assert render(x) == render(x)")])) == []

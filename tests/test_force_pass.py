@@ -36,7 +36,7 @@ def test_fallback_scan_when_unparseable():
 
 def test_non_py_config_no_ast_warning():
     fd = FileDiff("pyproject.toml", "added",
-                  added_lines=[(1, "[tool.pytest.ini_options]")],
+                  added_lines=[(1, "python_files = test_*.py")],
                   removed_lines=[], kind="config")
     ctx = _ctx([fd])
     assert detect(ctx) == []
