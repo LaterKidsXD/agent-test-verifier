@@ -13,10 +13,17 @@ from atv.context import (
 )
 from atv.detectors import assertion_weakening, force_pass, null_test
 from atv.diff import parse_diff
-from atv.report import Finding, Severity, to_json, to_text
+from atv.report import (
+    SEVERITY_RANK,
+    Finding,
+    Severity,
+    to_github,
+    to_json,
+    to_markdown,
+    to_text,
+)
 
 _DETECTORS = [force_pass.detect, assertion_weakening.detect, null_test.detect]
-_ORDER = {Severity.LOW: 0, Severity.MEDIUM: 1, Severity.HIGH: 2}
 
 
 def _changed_line_count(diff_text: str) -> int:
@@ -46,7 +53,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--diff")
     ap.add_argument("--repo")
     ap.add_argument("--base")
-    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--json", action="store_true",
+                    help="deprecated alias for --format json")
+    ap.add_argument("--format", choices=["text", "json", "github", "markdown"],
+                    default=None,
+                    help="output format (default: text; --json implies json)")
     ap.add_argument("--fail-on", choices=["low", "medium", "high"], default="low")
     args = ap.parse_args(argv)
 
@@ -99,8 +110,19 @@ def main(argv: list[str] | None = None) -> int:
         "skipped_unparseable": len(ctx.warnings),
         "counts_by_pattern": dict(Counter(f.pattern for f in findings)),
     }
-    print(json.dumps(to_json(findings, summary), indent=2) if args.json
-          else to_text(findings, summary))
+    fail_on = Severity(args.fail_on)
+    fmt = args.format or ("json" if args.json else "text")
+    if fmt == "json":
+        print(json.dumps(to_json(findings, summary), indent=2))
+    elif fmt == "github":
+        annotations = to_github(findings, fail_on)
+        if annotations:
+            print(annotations)
+    elif fmt == "markdown":
+        print(to_markdown(findings, summary))
+    else:
+        print(to_text(findings, summary))
 
-    threshold = _ORDER[Severity(args.fail_on)]
-    return 1 if any(_ORDER[f.severity] >= threshold for f in findings) else 0
+    threshold = SEVERITY_RANK[fail_on]
+    return 1 if any(
+        SEVERITY_RANK[f.severity] >= threshold for f in findings) else 0
