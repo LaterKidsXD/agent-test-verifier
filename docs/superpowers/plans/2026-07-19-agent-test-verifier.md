@@ -334,7 +334,7 @@ git commit -m "feat: unified-diff parser + file classification"
 **Interfaces:**
 - Consumes: `atv.diff.FileDiff`.
 - Produces:
-  - `@dataclass class AnalysisContext(files: list[FileDiff], resolver: Callable[[str], str|None], warnings: list[str])` with methods `new_source(path)->str|None` and `tree(path)->ast.Module|None` (lazy, cached; records a warning + returns None on missing/unparseable).
+  - `@dataclass class AnalysisContext(files: list[FileDiff], resolver: Callable[[str], str|None], warnings: list[str])` with methods `new_source(path)->str|None` and `tree(path)->ast.Module|None` (lazy, cached; records a warning + returns None on **unparseable**. A **missing** source returns None **silently** — None is the normal diff-mode result for every modified file, so warning on it would flood the warnings channel; genuine read failures are handled in `working_tree_resolver`, which must not raise).
   - `working_tree_resolver(repo_root: str) -> Callable[[str], str|None]` (reads file from disk).
   - `diff_reconstruct_resolver(files: list[FileDiff]) -> Callable[[str], str|None]` (returns joined added-lines content **only for fully-added files**, else None).
 
@@ -599,11 +599,14 @@ def detect(ctx: AnalysisContext) -> list[Finding]:
     for fd in ctx.files:
         if fd.kind != "test":
             continue
-        for text in fd.removed_lines:
-            if _ASSERT.match(text):
-                findings.append(Finding(
-                    fd.path, 0, "assertion_removed", Severity.HIGH,
-                    "an assertion was deleted from an existing test", text.strip()))
+        removed_asserts = [t for t in fd.removed_lines if _ASSERT.match(t)]
+        added_asserts = [t for _, t in fd.added_lines if _ASSERT.match(t)]
+        # Only a NET decrease is a real deletion — a 1-for-1 edit (assert x==3 ->
+        # assert x==4) or a reformat is removed+added and must stay silent.
+        for text in removed_asserts[len(added_asserts):]:
+            findings.append(Finding(
+                fd.path, 0, "assertion_removed", Severity.HIGH,
+                "an assertion was net-deleted from an existing test", text.strip()))
         for ln, text in fd.added_lines:
             if _TRIVIAL.match(text):
                 findings.append(Finding(
@@ -842,10 +845,20 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     if args.repo and args.base:
-        diff_text = subprocess.run(
-            ["git", "-C", args.repo, "diff", f"{args.base}...HEAD"],
-            capture_output=True, text=True, check=False).stdout
-        files = parse_diff(diff_text)
+        try:
+            proc = subprocess.run(
+                ["git", "-C", args.repo, "diff", f"{args.base}...HEAD"],
+                capture_output=True, text=True, check=False)
+        except FileNotFoundError:
+            print("error: git not found on PATH", file=sys.stderr)
+            return 2
+        if proc.returncode != 0:
+            # A git failure (bad repo/ref, git missing) must fail loudly — never
+            # produce an empty diff that reports a false "clean" and exits 0.
+            print(f"error: git diff failed (exit {proc.returncode}): "
+                  f"{proc.stderr.strip()}", file=sys.stderr)
+            return 2
+        files = parse_diff(proc.stdout)
         ctx = AnalysisContext(files, working_tree_resolver(args.repo))
     elif args.diff:
         diff_text = sys.stdin.read() if args.diff == "-" else open(
