@@ -81,3 +81,33 @@ def to_github(findings: list[Finding], fail_on: Severity) -> str:
         props.append(f"title={_esc_prop(f'atv: {f.pattern}')}")
         lines.append(f"::{level} {','.join(props)}::{_esc_data(f.message)}")
     return "\n".join(lines)
+
+
+def _md_cell(s: str) -> str:
+    """Escape a Markdown table cell so one finding can't break the table."""
+    s = s.replace("|", "\\|")
+    return s.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
+
+
+def to_markdown(findings: list[Finding], summary: dict) -> str:
+    if not findings:
+        return (
+            "### agent-test-verifier — clean\n\n"
+            f"{summary['files_analyzed']} file(s) analyzed, "
+            "no faked-green patterns found."
+        )
+    counts = ", ".join(
+        f"`{p}` {n}" for p, n in summary["counts_by_pattern"].items())
+    out = [
+        f"### agent-test-verifier — FLAGGED ({len(findings)} finding(s))",
+        "",
+        f"{summary['files_analyzed']} file(s) analyzed · counts: {counts}",
+        "",
+        "| Severity | File | Line | Pattern | Message |",
+        "|---|---|---|---|---|",
+    ]
+    for f in findings:
+        out.append(
+            f"| {f.severity.value} | {_md_cell(f.file)} | {f.line} "
+            f"| {_md_cell(f.pattern)} | {_md_cell(f.message)} |")
+    return "\n".join(out)

@@ -1,4 +1,12 @@
-from atv.report import Finding, Severity, verdict, to_json, to_text, to_github
+from atv.report import (
+    Finding,
+    Severity,
+    verdict,
+    to_json,
+    to_text,
+    to_github,
+    to_markdown,
+)
 
 def _f():
     return [Finding("t/test_x.py", 12, "null_test", Severity.HIGH, "asserts nothing", "def test_x")]
@@ -61,3 +69,38 @@ def test_to_github_line_zero_is_file_level():
 
 def test_to_github_empty_findings_is_empty():
     assert to_github([], fail_on=Severity.LOW) == ""
+
+
+def test_to_markdown_flagged_table():
+    fs = [
+        Finding("tests/conftest.py", 3, "force_pass", Severity.HIGH,
+                "hook overrides outcome"),
+        Finding("tests/test_x.py", 12, "null_test", Severity.LOW,
+                "no meaningful assertion"),
+    ]
+    summary = {"files_analyzed": 3, "skipped_unparseable": 0,
+               "counts_by_pattern": {"force_pass": 1, "null_test": 1}}
+    out = to_markdown(fs, summary)
+    assert "### agent-test-verifier — FLAGGED (2 finding(s))" in out
+    assert "3 file(s) analyzed · counts: `force_pass` 1, `null_test` 1" in out
+    assert "| Severity | File | Line | Pattern | Message |" in out
+    assert "|---|---|---|---|---|" in out
+    assert ("| high | tests/conftest.py | 3 | force_pass "
+            "| hook overrides outcome |") in out
+    assert ("| low | tests/test_x.py | 12 | null_test "
+            "| no meaningful assertion |") in out
+
+
+def test_to_markdown_escapes_cells():
+    fs = [Finding("a.py", 1, "p", Severity.HIGH, "bad | pipe\nand newline")]
+    summary = {"files_analyzed": 1, "skipped_unparseable": 0,
+               "counts_by_pattern": {"p": 1}}
+    assert "bad \\| pipe and newline" in to_markdown(fs, summary)
+
+
+def test_to_markdown_clean():
+    summary = {"files_analyzed": 3, "skipped_unparseable": 0,
+               "counts_by_pattern": {}}
+    out = to_markdown([], summary)
+    assert "### agent-test-verifier — clean" in out
+    assert "3 file(s) analyzed, no faked-green patterns found." in out
