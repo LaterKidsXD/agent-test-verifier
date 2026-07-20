@@ -55,3 +55,29 @@ def to_text(findings: list[Finding], summary: dict) -> str:
         if f.snippet:
             out.append(f"      > {f.snippet}")
     return "\n".join(out)
+
+
+SEVERITY_RANK = {Severity.LOW: 0, Severity.MEDIUM: 1, Severity.HIGH: 2}
+
+
+def _esc_data(s: str) -> str:
+    """Escape the workflow-command message channel ('%' first, always)."""
+    return s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+def _esc_prop(s: str) -> str:
+    """Escape a workflow-command property value (file=, title=)."""
+    return _esc_data(s).replace(":", "%3A").replace(",", "%2C")
+
+
+def to_github(findings: list[Finding], fail_on: Severity) -> str:
+    lines = []
+    for f in findings:
+        level = ("error" if SEVERITY_RANK[f.severity] >= SEVERITY_RANK[fail_on]
+                 else "warning")
+        props = [f"file={_esc_prop(f.file)}"]
+        if f.line != 0:
+            props.append(f"line={f.line}")
+        props.append(f"title={_esc_prop(f'atv: {f.pattern}')}")
+        lines.append(f"::{level} {','.join(props)}::{_esc_data(f.message)}")
+    return "\n".join(lines)
