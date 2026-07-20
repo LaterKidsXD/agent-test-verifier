@@ -1,0 +1,16 @@
+name: self-check
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  atv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # atv diffs against the PR base; full history required
+      - uses: ./

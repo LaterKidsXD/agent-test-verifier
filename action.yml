@@ -1,0 +1,52 @@
+name: agent-test-verifier
+description: >-
+  Detect faked test/pass signals (force-pass hooks, neutered assertions,
+  null tests) in a pull request diff. Annotates flagged lines inline,
+  writes a findings table to the step summary, and gates the check.
+
+inputs:
+  base:
+    description: >-
+      Git ref to diff HEAD against. Defaults to the PR target branch
+      (origin/$GITHUB_BASE_REF) on pull_request events; required otherwise.
+    required: false
+    default: ""
+  fail-on:
+    description: "Minimum severity that fails the check: low, medium, or high."
+    required: false
+    default: "low"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install agent-test-verifier
+      shell: bash
+      run: pip install "$GITHUB_ACTION_PATH"
+
+    - name: Run agent-test-verifier
+      shell: bash
+      env:
+        INPUT_BASE: ${{ inputs.base }}
+        FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        BASE="$INPUT_BASE"
+        if [ -z "$BASE" ]; then
+          if [ -n "$GITHUB_BASE_REF" ]; then
+            git -C "$GITHUB_WORKSPACE" fetch --no-tags origin "$GITHUB_BASE_REF" || true
+            BASE="origin/$GITHUB_BASE_REF"
+          else
+            echo "::error::agent-test-verifier: no 'base' input and not a pull_request event; set the 'base' input."
+            exit 2
+          fi
+        fi
+        CODE=0
+        atv --repo "$GITHUB_WORKSPACE" --base "$BASE" --fail-on "$FAIL_ON" --format github || CODE=$?
+        if [ "$CODE" -eq 2 ]; then
+          exit 2
+        fi
+        atv --repo "$GITHUB_WORKSPACE" --base "$BASE" --fail-on "$FAIL_ON" --format markdown >> "$GITHUB_STEP_SUMMARY" || true
+        exit "$CODE"

@@ -1,6 +1,6 @@
 [project]
 name = "agent-test-verifier"
-version = "0.1.0"
+version = "1.0.0"
 description = "Detect when a coding agent fakes its passing signal (gamed tests/config)."
 requires-python = ">=3.11"
 dependencies = ["unidiff>=0.7.5"]
