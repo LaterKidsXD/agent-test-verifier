@@ -33,3 +33,11 @@ def test_fallback_scan_when_unparseable():
                   added_lines=[(1, "def pytest_runtest_makereport(:  # broken syntax")],
                   removed_lines=[], kind="config")
     assert any(x.pattern == "force_pass_hook" for x in detect(_ctx([fd])))
+
+def test_non_py_config_no_ast_warning():
+    fd = FileDiff("pyproject.toml", "added",
+                  added_lines=[(1, "[tool.pytest.ini_options]")],
+                  removed_lines=[], kind="config")
+    ctx = _ctx([fd])
+    assert detect(ctx) == []
+    assert ctx.warnings == []

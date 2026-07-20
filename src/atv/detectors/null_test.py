@@ -37,6 +37,6 @@ def detect(ctx: AnalysisContext) -> list[Finding]:
                 findings.append(Finding(
                     file=fd.path, line=node.lineno, pattern="null_test",
                     severity=Severity.HIGH,
-                    message=f"test '{node.name}' asserts nothing — cannot fail (fabricated signal)",
+                    message=f"test '{node.name}' has no visible assertion in its body - it cannot fail",
                     snippet=f"def {node.name}(...)"))
     return findings

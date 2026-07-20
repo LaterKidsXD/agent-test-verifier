@@ -20,14 +20,14 @@ def detect(ctx: AnalysisContext) -> list[Finding]:
         if fd.kind != "config":
             continue
         added = {ln for ln, _ in fd.added_lines}
-        tree = ctx.tree(fd.path)
+        tree = ctx.tree(fd.path) if fd.path.endswith(".py") else None
         if tree is None:
             for ln, text in fd.added_lines:
                 for hook in _HOOKS:
                     if f"def {hook}" in text:
                         findings.append(Finding(
                             fd.path, ln, "force_pass_hook", Severity.HIGH,
-                            f"pytest hook '{hook}' added — can override test outcomes",
+                            f"pytest hook '{hook}' added - can override test outcomes",
                             text.strip()))
             continue
         for node in ast.walk(tree):
@@ -38,7 +38,7 @@ def detect(ctx: AnalysisContext) -> list[Finding]:
             ):
                 findings.append(Finding(
                     fd.path, node.lineno, "force_pass_hook", Severity.HIGH,
-                    f"pytest hook '{node.name}' added — can force-pass/deselect tests",
+                    f"pytest hook '{node.name}' added - can force-pass/deselect tests",
                     f"def {node.name}(...)"))
         for node in tree.body:
             if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
@@ -47,6 +47,6 @@ def detect(ctx: AnalysisContext) -> list[Finding]:
                 if name == "exit" and node.lineno in added:
                     findings.append(Finding(
                         fd.path, node.lineno, "collection_exit", Severity.HIGH,
-                        "module-level exit() in config — can short-circuit collection",
+                        "module-level exit() in config - can short-circuit collection",
                         "exit(...)"))
     return findings

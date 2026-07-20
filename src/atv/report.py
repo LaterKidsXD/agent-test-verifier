@@ -45,10 +45,10 @@ def to_json(findings: list[Finding], summary: dict) -> dict:
 def to_text(findings: list[Finding], summary: dict) -> str:
     if not findings:
         return (
-            f"clean — {summary['files_analyzed']} file(s) analyzed, "
+            f"clean - {summary['files_analyzed']} file(s) analyzed, "
             "no faked-green patterns found"
         )
-    out = [f"FLAGGED — {len(findings)} finding(s):", ""]
+    out = [f"FLAGGED - {len(findings)} finding(s):", ""]
     for f in findings:
         out.append(f"  [{f.severity.value}] {f.file}:{f.line}  {f.pattern}")
         out.append(f"      {f.message}")

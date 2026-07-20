@@ -37,3 +37,7 @@ def test_net_deletion_still_flags():
     f = detect(_ctx(added=[(5, "    assert a == 1")],
                      removed=["    assert a == 1", "    assert b == 2"]))
     assert len(f) == 1 and f[0].pattern == "assertion_removed"
+
+def test_flags_tautology():
+    f = detect(_ctx(added=[(5, "    assert x == x")]))
+    assert len(f) == 1 and f[0].pattern == "assertion_trivialized"
