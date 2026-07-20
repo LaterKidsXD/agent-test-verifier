@@ -73,6 +73,35 @@ them execute code:
 
 ## Use in CI
 
+### GitHub Action
+
+Add one workflow file and every pull request gets scanned: findings appear
+as inline annotations on the diff, a findings table lands on the checks
+Summary page, and the check goes red when any finding meets the `fail-on`
+bar:
+
+```yaml
+name: agent-test-verifier
+on: pull_request
+jobs:
+  atv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # atv diffs against the PR base; full history required
+      - uses: LaterKidsXD/agent-test-verifier@v1
+```
+
+Inputs (both optional):
+
+| Input | Default | Meaning |
+|---|---|---|
+| `base` | PR target branch | Git ref to diff `HEAD` against — set it for non-PR triggers |
+| `fail-on` | `low` | Minimum severity that fails the check: `low`, `medium`, or `high` |
+
+### Any CI (direct CLI)
+
 `atv` returns a process exit code you can gate on directly — no output
 parsing required:
 
@@ -91,11 +120,16 @@ atv --diff path/to.diff
 atv --repo /path/to/repo --base main
 ```
 
-Add `--json` to either mode for a machine-readable report instead of the
-text summary shown in the Demo above.
+Pick an output format with `--format {text,json,github,markdown}`
+(default `text`):
 
-A GitHub Action wrapper around `--repo --base` is coming in v1.1 — for now,
-call the CLI directly from any CI step after checkout.
+- `text` — the human summary shown in the Demo above
+- `json` — machine-readable report (`--json` is kept as a back-compat
+  alias)
+- `github` — GitHub Actions workflow-command annotations: findings at or
+  above `--fail-on` emit `::error`, findings below it emit `::warning`
+- `markdown` — a findings table suitable for `$GITHUB_STEP_SUMMARY` or a
+  PR comment
 
 ## Limitations
 
