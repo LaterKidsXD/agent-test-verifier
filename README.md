@@ -50,6 +50,14 @@ FLAGGED — 1 finding(s):
 Exit code: `1` (findings at/above the fail-on threshold — this is what CI
 gates on).
 
+### Live demo (GitHub Action on a real PR)
+
+[PR #2](https://github.com/LaterKidsXD/agent-test-verifier/pull/2) is a
+permanently open pull request with one target pattern per detector planted
+in its diff. The `agent-test-verifier` check on it shows the whole failure
+path live: a red check, inline `::error` annotations on the flagged lines,
+and the findings table on the run's Summary page.
+
 ## What it detects
 
 Three independent, purely static detectors, all AST- or line-based — none of
