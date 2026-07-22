@@ -4,6 +4,10 @@ description: >-
   null tests) in a pull request diff. Annotates flagged lines inline,
   writes a findings table to the step summary, and gates the check.
 
+branding:
+  icon: shield
+  color: red
+
 inputs:
   base:
     description: >-
