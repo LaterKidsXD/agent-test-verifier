@@ -1,8 +1,7 @@
 name: agent-test-verifier
 description: >-
-  Detect faked test/pass signals (force-pass hooks, neutered assertions,
-  null tests) in a pull request diff. Annotates flagged lines inline,
-  writes a findings table to the step summary, and gates the check.
+  Detect faked test/pass signals in a PR diff - force-pass hooks, neutered
+  assertions, null tests. Annotates and gates CI.
 
 branding:
   icon: shield
